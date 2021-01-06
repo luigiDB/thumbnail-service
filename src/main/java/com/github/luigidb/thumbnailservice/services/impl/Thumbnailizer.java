@@ -20,15 +20,15 @@ import static com.github.luigidb.thumbnailservice.utils.UtilityMethods.getThumbn
 @Service
 public class Thumbnailizer {
 
-    private static final Logger logger = LoggerFactory.getLogger(Thumbnailizer.class);
+    private final StorageService tempStorage;
+    private final StorageService persistentStorage;
 
     @Autowired
-    @Qualifier("EphemeralStorage")
-    StorageService tempStorage;
-
-    @Autowired
-    @Qualifier("ThumbnailStorage")
-    StorageService persistentStorage;
+    public Thumbnailizer(@Qualifier("EphemeralStorage")StorageService tempStorage,
+                         @Qualifier("ThumbnailStorage")StorageService persistentStorage) {
+        this.tempStorage = tempStorage;
+        this.persistentStorage = persistentStorage;
+    }
 
     @Async
     public void asyncThumbnail(String file) {

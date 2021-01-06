@@ -28,6 +28,10 @@ public class FileSystemStorage implements StorageService {
         this.rootLocation = Paths.get(folder);
     }
 
+    public FileSystemStorage(Path dir) {
+        rootLocation = dir;
+    }
+
     @Override
     public void init() {
         try {
