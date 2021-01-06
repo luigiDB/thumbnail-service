@@ -21,4 +21,6 @@ public interface StorageService {
     Resource loadAsResource(String filename);
 
     void delete(String filename);
+
+    boolean exist(String filename);
 }

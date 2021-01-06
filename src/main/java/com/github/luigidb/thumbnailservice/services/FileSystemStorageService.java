@@ -123,6 +123,19 @@ public class FileSystemStorageService implements StorageService {
     }
 
     @Override
+    public boolean exist(String filename) {
+        try {
+            Path file = load(filename);
+            Resource resource = new UrlResource(file.toUri());
+            if (resource.exists() || resource.isReadable())
+                return true;
+        } catch (MalformedURLException e) {
+            return false;
+        }
+        return false;
+    }
+
+    @Override
     public void init() {
         try {
             Files.createDirectories(rootLocation);
