@@ -30,11 +30,11 @@ class ThumbnailControllerTest {
 
     @MockBean
     @Qualifier("EphemeralStorage")
-    private StorageService storageService;
+    private StorageService tempStorage;
 
     @MockBean
     @Qualifier("ThumbnailStorage")
-    StorageService persistentService;
+    StorageService persistentStorage;
 
     @MockBean
     Thumbnailizer thumbnailizer;
@@ -59,7 +59,7 @@ class ThumbnailControllerTest {
                 .andExpect(status().is2xxSuccessful());
 
         ArgumentCaptor<MultipartFile> argument = ArgumentCaptor.forClass(MultipartFile.class);
-        verify(storageService).store(argument.capture());
+        verify(tempStorage).store(argument.capture());
         assertTrue(IOUtils.contentEquals(argument.getValue().getInputStream(),
                 multipartFile.getInputStream()));
     }

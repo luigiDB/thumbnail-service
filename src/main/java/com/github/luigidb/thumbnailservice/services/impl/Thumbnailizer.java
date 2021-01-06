@@ -1,5 +1,6 @@
 package com.github.luigidb.thumbnailservice.services.impl;
 
+import com.github.luigidb.thumbnailservice.exceptions.StorageException;
 import com.github.luigidb.thumbnailservice.services.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,22 +24,23 @@ public class Thumbnailizer {
 
     @Autowired
     @Qualifier("EphemeralStorage")
-    StorageService storageService;
+    StorageService tempStorage;
 
     @Autowired
     @Qualifier("ThumbnailStorage")
-    StorageService persistentService;
+    StorageService persistentStorage;
 
     @Async
     public void asyncThumbnail(String file) {
-        Path originalImage = storageService.load(file);
         try {
+            Path originalImage = tempStorage.load(file);
             Image img = ImageIO
                     .read(originalImage.toFile())
                     .getScaledInstance(100, 100, BufferedImage.SCALE_SMOOTH);
-            persistentService.store(img, getThumbnailName(file));
+            persistentStorage.store(img, getThumbnailName(file));
+            tempStorage.delete(file);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new StorageException("Error while persisting thumbnail");
         }
     }
 

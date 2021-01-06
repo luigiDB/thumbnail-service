@@ -1,6 +1,7 @@
 package com.github.luigidb.thumbnailservice.controllers;
 
 import com.github.luigidb.thumbnailservice.entities.BaseReply;
+import com.github.luigidb.thumbnailservice.exceptions.StorageException;
 import com.github.luigidb.thumbnailservice.exceptions.StorageFileNotFoundException;
 import com.github.luigidb.thumbnailservice.services.StorageService;
 import com.github.luigidb.thumbnailservice.services.impl.Thumbnailizer;
@@ -23,24 +24,24 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @Controller
 public class ThumbnailController {
 
-    private final StorageService storageService;
-    private final StorageService persistentService;
-    private Thumbnailizer thumbnailizer;
+    private final StorageService tempStorage;
+    private final StorageService persistentStorage;
+    private final Thumbnailizer thumbnailizer;
 
     @Autowired
     public ThumbnailController(
-            @Qualifier("EphemeralStorage") StorageService storageService,
-            @Qualifier("ThumbnailStorage") StorageService persistentService,
+            @Qualifier("EphemeralStorage") StorageService tempStorage,
+            @Qualifier("ThumbnailStorage") StorageService persistentStorage,
             Thumbnailizer thumbnailizer) {
-        this.storageService = storageService;
-        this.persistentService = persistentService;
+        this.tempStorage = tempStorage;
+        this.persistentStorage = persistentStorage;
         this.thumbnailizer = thumbnailizer;
     }
 
     @PostMapping("/thumbnails")
     @ResponseBody
     public ResponseEntity<EntityModel<BaseReply>> uploadImage(@RequestParam("file") MultipartFile file) {
-        storageService.store(file);
+        tempStorage.store(file);
 
         thumbnailizer.asyncThumbnail(file.getOriginalFilename());
 
@@ -55,7 +56,7 @@ public class ThumbnailController {
     @GetMapping("/thumbnails/{filename:.+}")
     @ResponseBody
     public ResponseEntity<EntityModel<BaseReply>> processing(@PathVariable String filename) {
-        if (persistentService.exist(getThumbnailName(filename)))
+        if (persistentStorage.exist(getThumbnailName(filename)))
             return new ResponseEntity<>(EntityModel.of(new BaseReply(),
                     linkTo(methodOn(ThumbnailController.class).retrieveThumbnail(getThumbnailName(filename))).withRel("thumbnail")
             ), HttpStatus.SEE_OTHER);
@@ -66,7 +67,7 @@ public class ThumbnailController {
     @GetMapping("/thumbnails/{filename:.+}/result")
     @ResponseBody
     public ResponseEntity<Resource> retrieveThumbnail(@PathVariable String filename) {
-        Resource file = persistentService.loadAsResource(filename);
+        Resource file = persistentStorage.loadAsResource(filename);
         return ResponseEntity
                 .ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
@@ -77,12 +78,17 @@ public class ThumbnailController {
     @DeleteMapping("/thumbnails/{filename:.+}/result")
     @ResponseBody
     public ResponseEntity<HttpStatus> deleteThumbnail(@PathVariable String filename) {
-        persistentService.delete(filename);
+        persistentStorage.delete(filename);
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }
 
     @ExceptionHandler(StorageFileNotFoundException.class)
     public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
         return ResponseEntity.notFound().build();
+    }
+
+    @ExceptionHandler(StorageException.class)
+    public ResponseEntity<?> handleStorageException(StorageFileNotFoundException exc) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
 }
