@@ -1,4 +1,4 @@
-package com.github.luigidb.thumbnailservice.controllers;
+package com.github.luigidb.thumbnailservice.exceptions;
 
 public class StorageException extends RuntimeException {
 

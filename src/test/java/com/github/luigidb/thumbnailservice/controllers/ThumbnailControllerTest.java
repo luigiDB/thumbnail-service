@@ -1,11 +1,10 @@
 package com.github.luigidb.thumbnailservice.controllers;
 
 import com.github.luigidb.thumbnailservice.services.StorageService;
-import com.github.luigidb.thumbnailservice.services.Thumbnailizer;
+import com.github.luigidb.thumbnailservice.services.impl.Thumbnailizer;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -16,7 +15,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
-import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;

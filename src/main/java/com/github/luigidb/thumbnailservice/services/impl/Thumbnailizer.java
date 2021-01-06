@@ -1,5 +1,6 @@
-package com.github.luigidb.thumbnailservice.services;
+package com.github.luigidb.thumbnailservice.services.impl;
 
+import com.github.luigidb.thumbnailservice.services.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
+
+import static com.github.luigidb.thumbnailservice.utils.UtilityMethods.getThumbnailName;
 
 @Service
 public class Thumbnailizer {
@@ -37,10 +40,6 @@ public class Thumbnailizer {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private String getThumbnailName(String file) {
-        return "thumbnail_" + file;
     }
 
 }

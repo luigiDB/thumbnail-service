@@ -1,7 +1,9 @@
 package com.github.luigidb.thumbnailservice.controllers;
 
+import com.github.luigidb.thumbnailservice.entities.BaseReply;
+import com.github.luigidb.thumbnailservice.exceptions.StorageFileNotFoundException;
 import com.github.luigidb.thumbnailservice.services.StorageService;
-import com.github.luigidb.thumbnailservice.services.Thumbnailizer;
+import com.github.luigidb.thumbnailservice.services.impl.Thumbnailizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import static com.github.luigidb.thumbnailservice.utils.UtilityMethods.getThumbnailName;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -34,19 +37,15 @@ public class ThumbnailController {
         this.thumbnailizer = thumbnailizer;
     }
 
-    private String getThumbnailName(String file) {
-        return "thumbnail_" + file;
-    }
-
     @PostMapping("/thumbnails")
     @ResponseBody
-    public ResponseEntity<EntityModel<DummyReply>> uploadImage(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<EntityModel<BaseReply>> uploadImage(@RequestParam("file") MultipartFile file) {
         storageService.store(file);
 
         thumbnailizer.asyncThumbnail(file.getOriginalFilename());
 
         return new ResponseEntity<>(
-                EntityModel.of(new DummyReply(),
+                EntityModel.of(new BaseReply(),
                         linkTo(methodOn(ThumbnailController.class).retrieveThumbnail(getThumbnailName(file.getOriginalFilename()))).withRel("thumbnail"),
                         linkTo(methodOn(ThumbnailController.class).processing(file.getOriginalFilename())).withRel("status")
                 ),
@@ -55,13 +54,13 @@ public class ThumbnailController {
 
     @GetMapping("/thumbnails/{filename:.+}")
     @ResponseBody
-    public ResponseEntity<EntityModel<DummyReply>> processing(@PathVariable String filename) {
+    public ResponseEntity<EntityModel<BaseReply>> processing(@PathVariable String filename) {
         if (persistentService.exist(getThumbnailName(filename)))
-            return new ResponseEntity<>(EntityModel.of(new DummyReply(),
+            return new ResponseEntity<>(EntityModel.of(new BaseReply(),
                     linkTo(methodOn(ThumbnailController.class).retrieveThumbnail(getThumbnailName(filename))).withRel("thumbnail")
             ), HttpStatus.SEE_OTHER);
         else
-            return new ResponseEntity<>(EntityModel.of(new DummyReply()), HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(EntityModel.of(new BaseReply()), HttpStatus.NOT_FOUND);
     }
 
     @GetMapping("/thumbnails/{filename:.+}/result")

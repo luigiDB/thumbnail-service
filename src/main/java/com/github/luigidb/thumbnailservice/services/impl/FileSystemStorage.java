@@ -1,7 +1,8 @@
-package com.github.luigidb.thumbnailservice.services;
+package com.github.luigidb.thumbnailservice.services.impl;
 
-import com.github.luigidb.thumbnailservice.controllers.StorageException;
-import com.github.luigidb.thumbnailservice.controllers.StorageFileNotFoundException;
+import com.github.luigidb.thumbnailservice.exceptions.StorageException;
+import com.github.luigidb.thumbnailservice.exceptions.StorageFileNotFoundException;
+import com.github.luigidb.thumbnailservice.services.StorageService;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.util.FileSystemUtils;
@@ -19,11 +20,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
-public class FileSystemStorageService implements StorageService {
+public class FileSystemStorage implements StorageService {
 
     private final Path rootLocation;
 
-    public FileSystemStorageService(String folder) {
+    public FileSystemStorage(String folder) {
         this.rootLocation = Paths.get(folder);
     }
 

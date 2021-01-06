@@ -1,7 +1,7 @@
-package com.github.luigidb.thumbnailservice.controllers;
+package com.github.luigidb.thumbnailservice.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DummyReply {
+public class BaseReply {
 }
