@@ -9,6 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.RenderedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -16,16 +21,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.stream.Stream;
 
-@Service
-class FileSystemStorageService implements StorageService {
+public class FileSystemStorageService implements StorageService {
 
     private final Path rootLocation;
 
-    @Autowired
-    public FileSystemStorageService(StorageProperties properties) {
-        this.rootLocation = Paths.get(properties.getLocation());
+    public FileSystemStorageService(String folder) {
+        this.rootLocation = Paths.get(folder);
     }
 
     @Override
@@ -34,33 +36,38 @@ class FileSystemStorageService implements StorageService {
             if (file.isEmpty()) {
                 throw new StorageException("Failed to store empty file.");
             }
-            Path destinationFile = rootLocation
-                    .resolve(Paths.get(file.getOriginalFilename()))
-                    .normalize()
-                    .toAbsolutePath();
-            if (!destinationFile.getParent().equals(rootLocation.toAbsolutePath())) {
-                // This is a security check
-                throw new StorageException("Cannot store file outside current directory.");
-            }
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, destinationFile,StandardCopyOption.REPLACE_EXISTING);
-            }
+            String originalFilename = file.getOriginalFilename();
+            InputStream fileContent = file.getInputStream();
+            saveFile(originalFilename, fileContent);
         } catch (IOException e) {
             throw new StorageException("Failed to store file.", e);
         }
     }
 
     @Override
-    public Stream<Path> loadAll() {
+    public void store(Image img, String filename) {
         try {
-            return Files
-                    .walk(rootLocation, 1)
-                    .filter(path -> !path.equals(rootLocation))
-                    .map(rootLocation::relativize);
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            ImageIO.write((RenderedImage) img,"jpg", os);
+            InputStream fis = new ByteArrayInputStream(os.toByteArray());
+            saveFile(filename, fis);
         } catch (IOException e) {
-            throw new StorageException("Failed to read stored files", e);
+            throw new StorageException("Failed to store file.", e);
         }
+    }
 
+    private void saveFile(String fileName, InputStream fileContent) throws IOException {
+        Path destinationFile = rootLocation
+                .resolve(Paths.get(fileName))
+                .normalize()
+                .toAbsolutePath();
+        if (!destinationFile.getParent().equals(rootLocation.toAbsolutePath())) {
+            //This way files can only be stored in the standard path
+            throw new StorageException("Cannot store file outside current directory.");
+        }
+        try (InputStream inputStream = fileContent) {
+            Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     @Override
@@ -77,7 +84,6 @@ class FileSystemStorageService implements StorageService {
                 return resource;
             } else {
                 throw new StorageFileNotFoundException("Could not read file: " + filename);
-
             }
         } catch (MalformedURLException e) {
             throw new StorageFileNotFoundException("Could not read file: " + filename, e);
@@ -87,6 +93,15 @@ class FileSystemStorageService implements StorageService {
     @Override
     public void deleteAll() {
         FileSystemUtils.deleteRecursively(rootLocation.toFile());
+    }
+
+    @Override
+    public void delete(String filename) {
+        try {
+            Files.deleteIfExists(rootLocation.resolve(filename));
+        } catch (IOException e) {
+            //do nothing
+        }
     }
 
     @Override
