@@ -1,6 +1,7 @@
 package com.github.luigidb.thumbnailservice.controllers;
 
 import com.github.luigidb.thumbnailservice.services.StorageService;
+import com.github.luigidb.thumbnailservice.services.Thumbnailizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
@@ -13,12 +14,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.nio.file.Path;
-
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -27,13 +22,16 @@ public class ThumbnailController {
 
     private final StorageService storageService;
     private final StorageService persistentService;
+    private Thumbnailizer thumbnailizer;
 
     @Autowired
     public ThumbnailController(
             @Qualifier("EphemeralStorage") StorageService storageService,
-            @Qualifier("ThumbnailStorage") StorageService persistentService) {
+            @Qualifier("ThumbnailStorage") StorageService persistentService,
+            Thumbnailizer thumbnailizer) {
         this.storageService = storageService;
         this.persistentService = persistentService;
+        this.thumbnailizer = thumbnailizer;
     }
 
     private String getThumbnailName(String file) {
@@ -43,18 +41,9 @@ public class ThumbnailController {
     @PostMapping("/thumbnails")
     @ResponseBody
     public ResponseEntity<EntityModel<DummyReply>> uploadImage(@RequestParam("file") MultipartFile file) {
-        System.out.println(file);
         storageService.store(file);
 
-        Path originalImage = storageService.load(file.getOriginalFilename());
-        try {
-            Image img = ImageIO
-                    .read(originalImage.toFile())
-                    .getScaledInstance(100, 100, BufferedImage.SCALE_SMOOTH);
-            persistentService.store(img, getThumbnailName(file.getOriginalFilename()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        thumbnailizer.asyncThumbnail(file.getOriginalFilename());
 
         return new ResponseEntity<>(
                 EntityModel.of(new DummyReply(),
