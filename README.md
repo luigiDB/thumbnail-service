@@ -97,6 +97,12 @@ Usage:
 
     curl --location --request DELETE 'localhost:8080/thumbnails/thumbnail_orange.jpg/result'
 
+
+## Technologies
+
+The service is realized using the Spring ecosystem since is the more complete and broadly used java framework to 
+develop web services.  
+
 ## Architecture
 The provided implementation is really simple, and  we can found 4 main components:
 * The REST controller
@@ -149,3 +155,5 @@ the API and more importantly permit to have more thumbnails with the same name.
 [ ] Add input sanity checks; file format, headers, max file size, ...
 
 [ ] Logging
+
+[ ] Monitoring endpoints 
