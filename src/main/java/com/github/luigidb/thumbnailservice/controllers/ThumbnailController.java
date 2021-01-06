@@ -56,9 +56,12 @@ public class ThumbnailController {
     @GetMapping("/thumbnails/{filename:.+}")
     @ResponseBody
     public ResponseEntity<EntityModel<DummyReply>> processing(@PathVariable String filename) {
-        return new ResponseEntity(EntityModel.of(new DummyReply(),
-                linkTo(methodOn(ThumbnailController.class).retrieveThumbnail(getThumbnailName(filename))).withRel("thumbnail")
-        ), HttpStatus.OK);
+        if (persistentService.exist(getThumbnailName(filename)))
+            return new ResponseEntity<>(EntityModel.of(new DummyReply(),
+                    linkTo(methodOn(ThumbnailController.class).retrieveThumbnail(getThumbnailName(filename))).withRel("thumbnail")
+            ), HttpStatus.SEE_OTHER);
+        else
+            return new ResponseEntity<>(EntityModel.of(new DummyReply()), HttpStatus.NOT_FOUND);
     }
 
     @GetMapping("/thumbnails/{filename:.+}/result")

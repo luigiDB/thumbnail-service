@@ -10,12 +10,14 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
 
 public class FileSystemStorageService implements StorageService {
 
@@ -96,13 +98,11 @@ public class FileSystemStorageService implements StorageService {
     @Override
     public Resource loadAsResource(String filename) {
         try {
-            Path file = load(filename);
-            Resource resource = new UrlResource(file.toUri());
-            if (resource.exists() || resource.isReadable()) {
-                return resource;
-            } else {
+            Optional<Resource> resource = getResourceByName(filename);
+            if(resource.isPresent())
+                return resource.get();
+            else
                 throw new StorageFileNotFoundException("Could not read file: " + filename);
-            }
         } catch (MalformedURLException e) {
             throw new StorageFileNotFoundException("Could not read file: " + filename, e);
         }
@@ -125,14 +125,20 @@ public class FileSystemStorageService implements StorageService {
     @Override
     public boolean exist(String filename) {
         try {
-            Path file = load(filename);
-            Resource resource = new UrlResource(file.toUri());
-            if (resource.exists() || resource.isReadable())
-                return true;
+            return getResourceByName(filename).isPresent();
         } catch (MalformedURLException e) {
             return false;
         }
-        return false;
+
+    }
+
+    private Optional<Resource> getResourceByName(String filename) throws MalformedURLException {
+        Path file = load(filename);
+        Resource resource = new UrlResource(file.toUri());
+        if (resource.exists() || resource.isReadable())
+            return Optional.of(resource);
+        else
+            return Optional.empty();
     }
 
     @Override
