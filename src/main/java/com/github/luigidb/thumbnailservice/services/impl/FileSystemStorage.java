@@ -3,8 +3,6 @@ package com.github.luigidb.thumbnailservice.services.impl;
 import com.github.luigidb.thumbnailservice.exceptions.StorageException;
 import com.github.luigidb.thumbnailservice.exceptions.StorageFileNotFoundException;
 import com.github.luigidb.thumbnailservice.services.StorageService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.util.FileSystemUtils;
@@ -23,7 +21,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 
 public class FileSystemStorage implements StorageService {
-    
+
     private final Path rootLocation;
 
     public FileSystemStorage(String folder) {
@@ -57,7 +55,7 @@ public class FileSystemStorage implements StorageService {
     public void store(Image img, String filename) {
         Path destinationFile = getDestinationPath(filename);
         try {
-            ImageIO.write(convertToBufferedImage(img),"png", destinationFile.toFile());
+            ImageIO.write(convertToBufferedImage(img), "png", destinationFile.toFile());
         } catch (IOException e) {
             throw new StorageException("Failed to store file.", e);
         }
@@ -93,7 +91,7 @@ public class FileSystemStorage implements StorageService {
     public Resource loadAsResource(String filename) {
         try {
             Optional<Resource> resource = getResourceByName(filename);
-            if(resource.isPresent())
+            if (resource.isPresent())
                 return resource.get();
             else
                 throw new StorageFileNotFoundException("Could not read file: " + filename);
