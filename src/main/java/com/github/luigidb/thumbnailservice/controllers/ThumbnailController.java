@@ -12,14 +12,24 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Path;
+
 @Controller
 public class ThumbnailController {
 
     private final StorageService storageService;
+    private final StorageService persistentService;
 
     @Autowired
-    public ThumbnailController(@Qualifier("EphemeralStorage") StorageService storageService) {
+    public ThumbnailController(
+            @Qualifier("EphemeralStorage") StorageService storageService,
+            @Qualifier("ThumbnailStorage") StorageService persistentService) {
         this.storageService = storageService;
+        this.persistentService = persistentService;
     }
 
 
@@ -28,14 +38,16 @@ public class ThumbnailController {
     public ResponseEntity<HttpStatus> uploadImage(@RequestParam("file") MultipartFile file) {
         System.out.println(file);
         storageService.store(file);
-//
-//        Path originalImage = storageService.load(file.getOriginalFilename());
-//        try {
-//            Image img = ImageIO.read(originalImage.toFile()).getScaledInstance(100, 100, BufferedImage.SCALE_SMOOTH);
-//            storageService.store(img, "thumbnail_"+file.getOriginalFilename());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+
+        Path originalImage = storageService.load(file.getOriginalFilename());
+        try {
+            Image img = ImageIO
+                    .read(originalImage.toFile())
+                    .getScaledInstance(100, 100, BufferedImage.SCALE_SMOOTH);
+            persistentService.store(img, "thumbnail_"+file.getOriginalFilename());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }

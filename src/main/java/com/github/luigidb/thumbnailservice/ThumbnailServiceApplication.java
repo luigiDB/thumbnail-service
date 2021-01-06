@@ -22,4 +22,12 @@ public class ThumbnailServiceApplication {
 			storageService.init();
 		};
 	}
+
+	@Bean
+	CommandLineRunner initPersistentStorage(@Qualifier("ThumbnailStorage") StorageService storageService) {
+		return (args) -> {
+			storageService.deleteAll();
+			storageService.init();
+		};
+	}
 }

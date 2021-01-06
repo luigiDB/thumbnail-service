@@ -2,20 +2,15 @@ package com.github.luigidb.thumbnailservice.services;
 
 import com.github.luigidb.thumbnailservice.controllers.StorageException;
 import com.github.luigidb.thumbnailservice.controllers.StorageFileNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.image.RenderedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +33,19 @@ public class FileSystemStorageService implements StorageService {
             }
             String originalFilename = file.getOriginalFilename();
             InputStream fileContent = file.getInputStream();
-            saveFile(originalFilename, fileContent);
+
+            Path destinationFile = rootLocation
+                    .resolve(Paths.get(originalFilename))
+                    .normalize()
+                    .toAbsolutePath();
+            if (!destinationFile.getParent().equals(rootLocation.toAbsolutePath())) {
+                //This way files can only be stored in the standard path
+                throw new StorageException("Cannot store file outside current directory.");
+            }
+            try (InputStream inputStream = fileContent) {
+                Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+
         } catch (IOException e) {
             throw new StorageException("Failed to store file.", e);
         }
@@ -46,28 +53,39 @@ public class FileSystemStorageService implements StorageService {
 
     @Override
     public void store(Image img, String filename) {
-        try {
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            ImageIO.write((RenderedImage) img,"jpg", os);
-            InputStream fis = new ByteArrayInputStream(os.toByteArray());
-            saveFile(filename, fis);
-        } catch (IOException e) {
-            throw new StorageException("Failed to store file.", e);
-        }
-    }
-
-    private void saveFile(String fileName, InputStream fileContent) throws IOException {
         Path destinationFile = rootLocation
-                .resolve(Paths.get(fileName))
+                .resolve(Paths.get(filename))
                 .normalize()
                 .toAbsolutePath();
         if (!destinationFile.getParent().equals(rootLocation.toAbsolutePath())) {
             //This way files can only be stored in the standard path
             throw new StorageException("Cannot store file outside current directory.");
         }
-        try (InputStream inputStream = fileContent) {
-            Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+        try {
+            ImageIO.write(
+                    convertToBufferedImage(img),
+                    "png",
+                    destinationFile.toFile());
+        } catch (IOException e) {
+            throw new StorageException("Failed to store file.", e);
         }
+    }
+
+    public static BufferedImage convertToBufferedImage(Image img) {
+        if (img instanceof BufferedImage) {
+            return (BufferedImage) img;
+        }
+
+        // Create a buffered image with transparency
+        BufferedImage bi = new BufferedImage(
+                img.getWidth(null), img.getHeight(null),
+                BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D graphics2D = bi.createGraphics();
+        graphics2D.drawImage(img, 0, 0, null);
+        graphics2D.dispose();
+
+        return bi;
     }
 
     @Override
