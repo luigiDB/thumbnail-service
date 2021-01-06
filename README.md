@@ -97,7 +97,48 @@ Usage:
 
     curl --location --request DELETE 'localhost:8080/thumbnails/thumbnail_orange.jpg/result'
 
-
 ## Architecture
+The provided implementation is really simple, and  we can found 4 main components:
+* The REST controller
+  
+  Responsible for the API handling.
+* The asynchronous service to produce the thumbnails
+  
+  Responsible for the deferred calculation of the thumbnails. 
+* An ephemeral storage 
+  
+  Used to store the original images. 
+* A persistent storage 
 
-## Future expansions
+  used to store the thumbnails until an user decide to delete them.
+
+The provided implementations are very simple, but they show a valid proof of concept of how a real architecture should work. 
+
+The asynchronous handling of the thumbnail is now done with a simple java Executor; this work for very low workload but 
+with a high workload can be easily swapped for a more robust alternative. The best option is to separate the service as 
+stand-alone since the processing is totally stateless.  
+
+Regarding the storage I choose to keep two separated entities because user provided images and thumbnails they have 
+different lives. The user provided images are short-lived since we only need to store them for the time necessary to 
+generate the thumbnail. The thumbnails instead need to be stored until the user decide to explicitly delete them; this 
+means that we need a long-running database with availability guarantees.  
+
+In the provided service the storage is implemented on top of the filesystem just as an initial development. In a real 
+scenario as the load increases a proper databases need to be used for storing the thumbnails. For the user images 
+is probably better to store them in a persistent queue shared with the thumbnail creator service rather than a database. 
+We only need them for the thumbnail service until the processing is complete thus having them stored in a DB can be more 
+cumbersome than useful since the database is intrinsically slower at scale when multiple replicas need to be 
+maintained. 
+
+Moreover, the queue approach present additional benefits: in when for scaling purposes the 4 components are split in
+different microservices. In that case it's possible to instantiate multiple running instances of the thumbnail creator 
+service where each one independently   
+
+
+## Functional enhancements
+[ ] Generate an Id for each image and use it in the api rather than the filenames; It's easier to maintain and simplifies 
+the API and more importantly permit to have more thumbnails with the same name.
+
+[ ] In the current architecture server errors are exposed to the user in a more robust environment errors need to be handled
+
+[ ] Add input sanity checks; file format, headers, max file size, ...
