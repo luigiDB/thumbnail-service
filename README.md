@@ -24,7 +24,7 @@ With maven run
 
 With the "official" docker image   
 
-    docker run –p 8080:8080 –t luigidb/thumbnail-service:latest
+    docker run –p 8080:8080 –t luigidb/thumbnail-service:latest -d
 
 ## Update Docker image  
 
